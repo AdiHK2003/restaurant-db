@@ -1,0 +1,63 @@
+/* =========================
+   MEMBER 2 - TEST CASES
+   ========================= */
+SET SERVEROUTPUT ON;
+
+-- =========================
+-- SETUP
+-- =========================
+-- 'Hibachi Grill' and 'James Carter' come from the base seed data.
+-- These tests also need 'Bella Italia' and an empty 'New Restaurant'.
+-- If you already ran the full project script, Bella Italia exists, so skip
+-- the first two inserts.
+INSERT INTO cuisinetypes VALUES (seq_cuisine_id.NEXTVAL, 'Italian');
+INSERT INTO restaurant VALUES (seq_restaurant_id.NEXTVAL, 'Bella Italia', '567 Pasta Court', 'New York', 'NY', '21043',
+    (SELECT cuisine_id FROM cuisinetypes WHERE cuisine_name = 'Italian'));
+INSERT INTO restaurant VALUES (seq_restaurant_id.NEXTVAL, 'New Restaurant', '1 Test Way', 'Baltimore', 'MD', '21201', 1);
+COMMIT;
+
+-- =========================
+-- TEST CASES - MEMBER 2
+-- =========================
+
+-- TEST 1: Case-insensitive restaurant name
+-- Expect: Works even with different casing
+EXEC add_waiter('Case Test', 'hibachi grill');
+
+-- TEST 2: Leading/trailing spaces in restaurant name
+-- Expect: Fails with 'restaurant not found' (names are not trimmed; reveals limitation)
+EXEC add_waiter('Space Test', '  Hibachi Grill  ');
+
+-- TEST 3: Long waiter name (boundary test)
+-- Expect: Inserts, since this ~64-character name fits the VARCHAR(100) column.
+-- A name over 100 characters would hit the limit and print an error.
+EXEC add_waiter('ThisIsAnExtremelyLongWaiterNameToTestTheLimitsOfTheDatabaseField', 'Hibachi Grill');
+
+-- TEST 4: Duplicate waiter name at same restaurant
+-- Expect: Allowed (no uniqueness constraint)
+EXEC add_waiter('James Carter', 'Hibachi Grill');
+
+-- TEST 5: Same waiter name at different restaurants
+-- Expect: Allowed and treated as separate entries
+EXEC add_waiter('Shared Name', 'Hibachi Grill');
+EXEC add_waiter('Shared Name', 'Bella Italia');
+
+-- TEST 6: Show waiters for restaurant with many entries
+-- Expect: Sorted alphabetical output
+EXEC show_waiters_by_restaurant('Hibachi Grill');
+
+-- TEST 7: Restaurant with no waiters
+-- Expect: Only the header prints, no names
+EXEC show_waiters_by_restaurant('New Restaurant');
+
+-- TEST 8: Function test with different casing
+-- Expect: Still finds the correct waiter_id
+-- (Uses a name that appears only once. 'james carter' would return NULL and
+-- print 'multiple waiters found' after Test 4 adds a duplicate.)
+DECLARE
+    v_id INT;
+BEGIN
+    v_id := find_waiter_id('priya sharma');
+    DBMS_OUTPUT.PUT_LINE('Waiter ID (case-insensitive): ' || v_id);
+END;
+/

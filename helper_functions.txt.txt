@@ -1,0 +1,96 @@
+/* =========================
+   SHARED HELPER FUNCTIONS
+   Used by several team members' procedures (for example, find_restaurant_id
+   is called by add_waiter and show_waiters_by_restaurant).
+   Run after schema.sql and before any member's code.
+   ========================= */
+CREATE OR REPLACE FUNCTION find_cuisine_type_id (
+    p_cuisine_name IN VARCHAR2  -- Input cuisine name
+) RETURN INT IS
+    v_id INT; -- Store the cuisine_id
+BEGIN
+    SELECT cuisine_id -- Find cuisine_id from the table
+    INTO v_id
+    FROM cuisinetypes
+    WHERE LOWER(cuisine_name) = LOWER(p_cuisine_name); -- Compare
+    RETURN v_id; -- Return ID
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL; -- No matching cuisine found return NULL
+END;
+/
+
+CREATE OR REPLACE FUNCTION FIND_RESTAURANT_ID (
+    p_restaurant_name IN VARCHAR2  -- Input restaurant name
+) RETURN INT IS
+    v_id INT;  -- Store the restaurant_id
+BEGIN
+    SELECT restaurant_id -- Find restaurant table
+    INTO v_id
+    FROM restaurant
+    WHERE LOWER(name) = LOWER(p_restaurant_name); -- Compare
+    RETURN v_id; -- Return the found restaurant_id
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL; -- No matching restaurant found return NULL
+    WHEN TOO_MANY_ROWS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: multiple restaurants found with same name');
+        RETURN NULL; -- Same name error return Null
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error in FIND_RESTAURANT_ID: ' || SQLERRM);
+        RETURN NULL;-- Any other Errors return NULL and SQLERRM
+END;
+/
+
+-- Function find_customer_id is used to find the customer ID of the customer who makes an order.
+CREATE OR REPLACE FUNCTION find_customer_id (p_customer_name IN VARCHAR2) RETURN INT IS
+	v_id INT;
+BEGIN
+	SELECT customer_id INTO v_id FROM customers WHERE name = p_customer_name;
+	RETURN v_id;
+EXCEPTION WHEN NO_DATA_FOUND THEN RETURN NULL;
+END;
+/
+
+CREATE OR REPLACE FUNCTION FIND_MENU_ITEM_ID(
+    p_item_name IN VARCHAR2
+) RETURN INT IS
+    v_id INT;  -- stores menu_item_id
+BEGIN
+    SELECT menu_item_id INTO v_id
+    FROM menuitems
+    WHERE LOWER(name) = LOWER(p_item_name);       -- case-insensitive match
+    RETURN v_id;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL;      -- return NULL if item not found
+END;
+/
+
+CREATE OR REPLACE FUNCTION get_restaurant_id (
+	p_restaurant_name IN VARCHAR2
+) RETURN NUMBER
+IS
+	v_restaurant_id NUMBER;
+BEGIN
+	SELECT restaurant_id
+	INTO v_restaurant_id
+	FROM restaurant
+	WHERE UPPER(name) = UPPER(p_restaurant_name);
+
+	RETURN v_restaurant_id;
+
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+	DBMS_OUTPUT.PUT_LINE('Restaurant not found: ' || p_restaurant_name);
+	RETURN NULL;
+	WHEN TOO_MANY_ROWS THEN
+	DBMS_OUTPUT.PUT_LINE('More than one restaurant found: ' || p_restaurant_name);
+	RETURN NULL;
+	WHEN OTHERS THEN
+	DBMS_OUTPUT.PUT_LINE('Error in get_restaurant_id');
+	RETURN NULL;
+END;
+/
